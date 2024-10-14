@@ -5,7 +5,7 @@ import DNSServer
 struct Application {
 
   static func main() async throws {
-    try await DNS(
+    try await DNSServer(
       hostname: "127.0.0.1",
       port: 8053
     ).run()
