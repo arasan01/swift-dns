@@ -10,14 +10,14 @@ struct Word16Parser: ParserPrinter {
     else {
       throw ParsingError()
     }
-    let output = UInt16(input[input.startIndex]) + UInt16(input[input.startIndex + 1]) << 8
+    let output = UInt16(input[input.startIndex]) << 8 + UInt16(input[input.startIndex + 1])
     input.removeFirst(2)
     return output
   }
   
   func print(_ output: UInt16, into input: inout ArraySlice<UInt8>) throws {
-    input.prepend(UInt8((output >> 8) & 0xFF))
     input.prepend(UInt8(output & 0xFF))
+    input.prepend(UInt8((output  >> 8) & 0xFF))
   }
 }
 
@@ -32,29 +32,29 @@ struct DNSHeaderFieldsParser: ParserPrinter {
     input.removeFirst(2)
 
     return .init(
-      qr: Bit(rawValue: byte1 & 0b00000001)!,
-      opcode: Opcode(rawValue: (byte1 & 0b00011110) >> 1)!,
-      aa: Bit(rawValue: (byte1 & 0b00100000) >> 5)!,
-      tc: Bit(rawValue: (byte1 & 0b01000000) >> 6)!,
-      rd: Bit(rawValue: (byte1 & 0b10000000) >> 7)!,
-      ra: Bit(rawValue: byte2 & 0b00000001)!,
-      z: UInt3(rawValue: (byte2 & 0b00001110) >> 1)!,
-      rcode: Rcode(rawValue: (byte2 & 0b11110000) >> 4)!
+      qr: Bit(rawValue: (byte1 & 0b1000_0000) >> 7)!,
+      opcode: Opcode(rawValue: (byte1 & 0b0111_1000) >> 3)!,
+      aa: Bit(rawValue: (byte1 & 0b0000_0100) >> 2)!,
+      tc: Bit(rawValue: (byte1 & 0b0000_0010) >> 1)!,
+      rd: Bit(rawValue: (byte1 & 0b0000_0001))!,
+      ra: Bit(rawValue: (byte2 & 0b1000_0000) >> 7)! ,
+      z: UInt3(rawValue: (byte2 & 0b0111_0000) >> 4)!,
+      rcode: Rcode(rawValue: (byte2 & 0b0000_1111))!
     )
   }
   
   func print(_ output: DNSHeader.Fields, into input: inout ArraySlice<UInt8>) throws {
     input.prepend(
-      output.ra.rawValue |
-      output.z.rawValue << 1 |
-      output.rcode.rawValue << 4
+      output.ra.rawValue << 7 |
+      output.z.rawValue << 4 |
+      output.rcode.rawValue
     )
     input.prepend(
-      output.qr.rawValue |
-      output.opcode.rawValue << 1 |
-      output.aa.rawValue << 5 |
-      output.tc.rawValue << 6 |
-      output.rd.rawValue << 7
+      output.qr.rawValue << 7 |
+      output.opcode.rawValue << 3 |
+      output.aa.rawValue << 2 |
+      output.tc.rawValue << 1 |
+      output.rd.rawValue
     )
   }
 }
