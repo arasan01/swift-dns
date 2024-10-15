@@ -16,8 +16,7 @@ struct Word16Parser: ParserPrinter {
   }
   
   func print(_ output: UInt16, into input: inout ArraySlice<UInt8>) throws {
-    input.prepend(UInt8(output & 0xFF))
-    input.prepend(UInt8((output >> 8) & 0xFF))
+    input.prepend(contentsOf: [UInt8((output >> 8) & 0xFF), UInt8(output & 0xFF)])
   }
 }
 
@@ -44,18 +43,17 @@ struct DNSHeaderFieldsParser: ParserPrinter {
   }
   
   func print(_ output: DNSHeader.Fields, into input: inout ArraySlice<UInt8>) throws {
-    input.prepend(
-      output.ra.rawValue << 7 |
-      output.z.rawValue << 4 |
-      output.rcode.rawValue << 0
-    )
-    input.prepend(
+    let byte1 =
       output.qr.rawValue << 7 |
       output.opcode.rawValue << 3 |
       output.aa.rawValue << 2 |
       output.tc.rawValue << 1 |
       output.rd.rawValue << 0
-    )
+    let byte2 =
+      output.ra.rawValue << 7 |
+      output.z.rawValue << 4 |
+      output.rcode.rawValue << 0
+    input.prepend(contentsOf: [byte1, byte2])
   }
 }
 
