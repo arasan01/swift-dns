@@ -17,7 +17,7 @@ struct Word16Parser: ParserPrinter {
   
   func print(_ output: UInt16, into input: inout ArraySlice<UInt8>) throws {
     input.prepend(UInt8(output & 0xFF))
-    input.prepend(UInt8((output  >> 8) & 0xFF))
+    input.prepend(UInt8((output >> 8) & 0xFF))
   }
 }
 
@@ -36,10 +36,10 @@ struct DNSHeaderFieldsParser: ParserPrinter {
       opcode: Opcode(rawValue: (byte1 & 0b0111_1000) >> 3)!,
       aa: Bit(rawValue: (byte1 & 0b0000_0100) >> 2)!,
       tc: Bit(rawValue: (byte1 & 0b0000_0010) >> 1)!,
-      rd: Bit(rawValue: (byte1 & 0b0000_0001))!,
+      rd: Bit(rawValue: (byte1 & 0b0000_0001) >> 0)!,
       ra: Bit(rawValue: (byte2 & 0b1000_0000) >> 7)! ,
       z: UInt3(rawValue: (byte2 & 0b0111_0000) >> 4)!,
-      rcode: Rcode(rawValue: (byte2 & 0b0000_1111))!
+      rcode: Rcode(rawValue: (byte2 & 0b0000_1111) >> 0)!
     )
   }
   
@@ -47,14 +47,14 @@ struct DNSHeaderFieldsParser: ParserPrinter {
     input.prepend(
       output.ra.rawValue << 7 |
       output.z.rawValue << 4 |
-      output.rcode.rawValue
+      output.rcode.rawValue << 0
     )
     input.prepend(
       output.qr.rawValue << 7 |
       output.opcode.rawValue << 3 |
       output.aa.rawValue << 2 |
       output.tc.rawValue << 1 |
-      output.rd.rawValue
+      output.rd.rawValue << 0
     )
   }
 }
@@ -169,11 +169,13 @@ struct UInt3: Equatable, RawRepresentable {
   
   init?(rawValue: UInt8) {
     guard
-      rawValue & 0b11111000 == 0,
-      let bit0 = Bit(rawValue: rawValue & 0b001),
-      let bit1 = Bit(rawValue: rawValue & 0b010),
-      let bit2 = Bit(rawValue: rawValue & 0b100)
-    else { return nil }
+      rawValue & 0b1111_1000 == 0,
+      let bit0 = Bit(rawValue: (rawValue & 0b001) >> 0),
+      let bit1 = Bit(rawValue: (rawValue & 0b010) >> 1),
+      let bit2 = Bit(rawValue: (rawValue & 0b100) >> 2)
+    else {
+      return nil
+    }
     
     self.bit0 = bit0
     self.bit1 = bit1

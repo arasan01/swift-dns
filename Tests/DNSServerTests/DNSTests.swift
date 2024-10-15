@@ -44,7 +44,15 @@ import Testing
 
 @Suite("DNSHeaderParsePrintTests")
 struct DNSHeaderParsePrintTests {
-  let header: [UInt8] = [
+  let requestHeader: [UInt8] = [
+    0x86, 0x2a,
+    0x01, 0x50,
+    0x00, 0x01,
+    0x00, 0x00,
+    0x00, 0x00,
+    0x00, 0x00
+  ]
+  let responseHeader: [UInt8] = [
     0x86, 0x2a,
     0x81, 0x80,
     0x00, 0x01,
@@ -53,7 +61,22 @@ struct DNSHeaderParsePrintTests {
     0x00, 0x00
   ]
   let rest: [UInt8] = [0xDE, 0xAD, 0xBE, 0xEF]
-  let headerValue = DNSHeader(
+  let requestHeaderValue = DNSHeader(
+    id: 34_346,
+    qr: .zero,
+    opcode: .standardQuery,
+    aa: .zero,
+    tc: .zero,
+    rd: .one,
+    ra: .zero,
+    z: UInt3(rawValue: 0b101)!,
+    rcode: .noError,
+    qdcount: 1,
+    ancount: 0,
+    nscount: 0,
+    arcount: 0
+  )
+  let responseHeaderValue = DNSHeader(
     id: 34_346,
     qr: .one,
     opcode: .standardQuery,
@@ -70,14 +93,28 @@ struct DNSHeaderParsePrintTests {
   )
   
   @Test func DNSHeaderParseTest() async throws {
-    var slice = (header + rest)[...]
-    let output: DNSHeader = try DNSHeaderParser().parse(&slice)
-    #expect(output == headerValue)
-    #expect(slice == rest[...])
+    do {
+      var slice = (requestHeader + rest)[...]
+      let output: DNSHeader = try DNSHeaderParser().parse(&slice)
+      #expect(output == requestHeaderValue)
+      #expect(slice == rest[...])
+    }
+    do {
+      var slice = (responseHeader + rest)[...]
+      let output: DNSHeader = try DNSHeaderParser().parse(&slice)
+      #expect(output == responseHeaderValue)
+      #expect(slice == rest[...])
+    }
   }
   
   @Test func DNSHeaderPrintTest() async throws {
-    let slice: ArraySlice<UInt8> = try DNSHeaderParser().print(headerValue)
-    #expect(slice == header[...])
+    do {
+      let slice: ArraySlice<UInt8> = try DNSHeaderParser().print(requestHeaderValue)
+      #expect(slice == requestHeader[...])
+    }
+    do {
+      let slice: ArraySlice<UInt8> = try DNSHeaderParser().print(responseHeaderValue)
+      #expect(slice == responseHeader[...])
+    }
   }
 }
